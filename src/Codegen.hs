@@ -204,6 +204,7 @@ addExtern p =
 -- to the CodegenState list. This list will be used to convert these Global
 -- values into Global module level definitions. A UnName is generated too
 -- for reference.
+-- TODO: here?
 addGlobalConstant :: LLVMAST.Type -> C.Constant -> Codegen Name
 addGlobalConstant ty con =
     do modName <- lift $ fmap showModSpec getModuleSpec

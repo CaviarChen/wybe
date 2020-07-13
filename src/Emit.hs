@@ -243,7 +243,7 @@ makeExec :: [FilePath]          -- Object Files
          -> FilePath            -- Target File
          -> Compiler ()
 makeExec ofiles target = do
-    let options = ["-no-pie"] ++ linkerDeadStripArgs
+    let options = [] ++ linkerDeadStripArgs
     let args = options ++ ofiles ++ ["-o", target]
     logEmit $ "Generating final executable with command line: cc "
               ++ unwords args
