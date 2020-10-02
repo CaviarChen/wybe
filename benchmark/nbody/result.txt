@@ -1,0 +1,24 @@
+(base) ubuntu@caviarchen-h1-vu ~/Documents/wybe/workspace~/benchmark/nbody (transform)$ time ./nbody_ms < input.txt 
+n: energy: -0.169075
+energy: -0.169035
+
+malloc count: 
+500000005
+
+real    0m54.789s
+user    0m54.727s
+sys     0m0.056s
+
+
+
+
+(base) ubuntu@caviarchen-h1-vu ~/Documents/wybe/workspace~/benchmark/nbody (transform)$ time ./nbody_nms < input.txt 
+n: energy: -0.169075
+energy: -0.169035
+
+malloc count: 
+1000000006
+
+real    1m6.728s
+user    1m6.634s
+sys     0m0.085s

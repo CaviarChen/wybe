@@ -1,0 +1,54 @@
+pub type int_list { pub [] | [|](head:int, tail:int_list) }
+
+pub def naive_reverse(lst: int_list, ?result: int_list) {
+    if { lst = [ ?h | ?t] ::
+        naive_reverse(t, ?rt)
+        ?result = append(rt, h)
+    | otherwise ::
+        ?result = []
+    }
+}
+
+# Add an item to the end of the list.
+pub def append(lst:int_list, v: int):int_list = extend(lst, [v])
+
+# Extend the first list by appending all the items from the second list.
+pub def extend(lst1:int_list, lst2:int_list):int_list = 
+    if lst1 = [?h | ?t] then [h | extend(t, lst2)] else lst2
+
+pub def new_list(n:int, ?result:int_list) {
+    ?result = []
+    new_list_loop(n-1,!result)
+}
+pub def new_list_loop(n:int, !result:int_list) {
+    if { n >= 0 ::
+        ?result = [n | result]
+        new_list_loop(n-1, !result)
+    }
+}
+
+pub def print(x:int_list) use !io {
+    if { x = [ ?h | ?t] :: 
+        !print(h)
+        foreign c putchar(' ', !io)
+        !print(t)
+    }
+}
+pub def println(x:int_list) use !io {
+    !print(x)
+    !nl
+}
+
+!malloc_count(?mc1)
+new_list(100000, ?lst)
+!malloc_count(?mc2)
+!println(lst)
+!malloc_count(?mc3)
+naive_reverse(lst, ?lst)
+!malloc_count(?mc4)
+!println(lst)
+
+# !println("malloc count for creating the list: ")
+!println(mc2-mc1)
+# !println("malloc count for reversing the list: ")
+!println(mc4-mc3)
