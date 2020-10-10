@@ -39,16 +39,18 @@ pub def println(x:int_list) use !io {
     !nl
 }
 
-!malloc_count(?mc1)
+!print("=== malloc count before everything: ")
+!print_malloc_count()
+
 new_list(100000, ?lst)
-!malloc_count(?mc2)
-!println(lst)
-!malloc_count(?mc3)
-naive_reverse(lst, ?lst)
-!malloc_count(?mc4)
+
+!print("=== malloc count after creating list: ")
+!print_malloc_count()
+
 !println(lst)
 
-# !println("malloc count for creating the list: ")
-!println(mc2-mc1)
-# !println("malloc count for reversing the list: ")
-!println(mc4-mc3)
+naive_reverse(lst, ?lst)
+!println(lst)
+
+!print("=== malloc count after reverse: ")
+!print_malloc_count()
