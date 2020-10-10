@@ -108,6 +108,7 @@ pub module io {
     pub def eof:char = foreign lpvm cast(-1)
 
     pub def malloc_count(?x:int) use !io { foreign c malloc_count(?x,!io) }
+    pub def print_malloc_count() use !io { foreign c print_malloc_count(!io) }
 }
 
 pub type phantom {

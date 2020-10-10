@@ -98,6 +98,9 @@ int malloc_count() {
     return (int)g_malloc_count;
 }
 
+void print_malloc_count() {
+    printf("%llu\n", g_malloc_count);
+}
 
 void error_exit(char *message) {
     fprintf( stderr, "%s\n", message);
