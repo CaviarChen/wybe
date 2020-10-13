@@ -38,8 +38,8 @@ def benchmark_program(cmd:str) -> Tuple[List[float], float, str]:
     return (time_used_list, avg_time, first_output)
     
 
-TARGET = "naive_reverse"
-CMD = "./naive_reverse"
+TARGET = "drone"
+CMD = "./drone < input_24_107.txt"
 
 for no_multi_specz in [False, True]:
     wybe_build_target(TARGET, no_multi_specz)
