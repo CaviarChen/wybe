@@ -137,28 +137,28 @@ pub def energy_inner_loop(bodies:bodylist, x1:float, y1:float, z1:float, m1:floa
 
 # -----------------------------
 # advance
-pub def advance(dt:float, n:int, !bodies:bodylist) {
+def advance(dt:float, n:int, !bodies:bodylist) {
     if { n > 0 ::
         ?n = n - 1
-
-        update_bodies_v(dt, bodies, !bodies)
-        update_bodies_pos(dt, !bodies)
-
+        advance_by_dt(dt, !bodies)
         advance(dt, n, !bodies)
     }
 }
 
-pub def update_bodies_v(dt:float, allbodies:bodylist, !bodies:bodylist) {
+def advance_by_dt(dt:float, !bodies:bodylist) {
+    update_bodies_v(dt, bodies, !bodies)
+    update_bodies_pos(dt, !bodies)
+}
+
+def update_bodies_v(dt:float, allbodies:bodylist, !bodies:bodylist) {
     if {bodies = body(?x1, ?y1, ?z1, ?vx1, ?vy1, ?vz1, ?m1, ?remain_bodies) :: 
-
         update_body_v_inner(dt, x1, y1, z1, !vx1, !vy1, !vz1, allbodies)
-
         update_bodies_v(dt, allbodies, !remain_bodies)
         ?bodies = body(x1, y1, z1, vx1, vy1, vz1, m1, remain_bodies)
     }
 }
 
-pub def update_body_v_inner(dt:float, x1:float, y1:float, z1:float, !vx1:float, !vy1:float, !vz1:float, bodies:bodylist) {
+def update_body_v_inner(dt:float, x1:float, y1:float, z1:float, !vx1:float, !vy1:float, !vz1:float, bodies:bodylist) {
     if {bodies = body(?x2, ?y2, ?z2, ?vx2, ?vy2, ?vz2, ?m2, ?remain_bodies) :: 
             ?dx = x1 - x2
             ?dy = y1 - y2
@@ -176,13 +176,11 @@ pub def update_body_v_inner(dt:float, x1:float, y1:float, z1:float, !vx1:float, 
     }
 }
 
-pub def update_bodies_pos(dt:float, !bodies:bodylist) {
+def update_bodies_pos(dt:float, !bodies:bodylist) {
     if {bodies = body(?x, ?y, ?z, ?vx, ?vy, ?vz, ?m, ?remain_bodies) :: 
-
         ?x = x + dt * vx
         ?y = y + dt * vy
         ?z = z + dt * vz
-
         update_bodies_pos(dt, !remain_bodies)
         ?bodies = body(x, y, z, vx, vy, vz, m, remain_bodies)
     }
