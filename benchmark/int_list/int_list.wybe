@@ -17,6 +17,34 @@ pub def println(x:int_list) use !io {
     !nl
 }
 
+pub def read_int_list(n:int, ?lst:int_list) use !io {
+    !read(?v:int)
+    ?n = n - 1
+    if { n > 0 ::
+        !read_int_list(n, ?lst)
+        ?lst = [v | lst]
+    | otherwise ::
+        ?lst = [v]
+    }
+}
+
+pub def read_int_list_reverse(n:int, ?lst:int_list) use !io {
+    !read_int_list_reverse_loop(n, [], ?lst)
+}
+
+def read_int_list_reverse_loop(n:int, acc:int_list, ?lst:int_list) use !io {
+    if {n > 0 ::
+        !read(?v:int)
+        ?n = n - 1
+        ?acc = [v | acc]
+        !read_int_list_reverse_loop(n, acc, ?lst)
+    | otherwise ::
+        ?lst = acc
+    }
+
+}
+
+
 
 # Returns an `int_list`, starting from `start`, and increments by `step`,
 # and stops before `stop`
@@ -116,37 +144,31 @@ def index_helper(lst:int_list, idx:int, x:int):int =
     else
         -1
 
-
 # Sort the items of the list
-pub def sort(lst:int_list):int_list =
-    if lst = [?h | ?t]
-    then
-        extend(sort(lesser(t, h)), [h | sort(greater(t, h))])
-    else
-        []
+pub def sort(!lst:int_list) {
+    if { lst = [?h | ?t] ::
+        partition(t, h, ?l, ?ge)
+        sort(!l)
+        sort(!ge)
+        ?lst = extend(l, [h|ge])
+    | otherwise ::
+    }
+}
 
-def lesser(lst:int_list, v:int):int_list =
-    if lst = [?h | ?t]
-    then
-        if h < v
-        then
-            [h | lesser(t, v)]
-        else
-            lesser(t, v)
-    else
-        []
-
-def greater(lst:int_list, v:int):int_list =
-    if lst = [?h | ?t]
-    then
-        if h >= v
-        then
-            [h | greater(t, v)]
-        else
-            greater(t, v)
-    else
-        []
-
+# Partition the given list based on a given pivot value
+def partition(lst:int_list, v:int, ?l:int_list, ?ge:int_list) {
+    if { lst = [?h | ?t] ::
+        partition(t, v, ?l, ?ge)
+        if { h < v ::
+            ?l = [h|l]
+        | otherwise ::
+            ?ge = [h|ge]
+        }
+    | otherwise ::
+        ?l = []
+        ?ge = []
+    }
+}
 
 # Reverse the elements of the list.
 pub def reverse(lst:int_list):int_list = reverse_helper(lst, [])
