@@ -1,27 +1,17 @@
 use int_list
 
 
-!read_int_list_reverse(100000, ?lst)
+!read_int_list_reverse(10_000_000, ?lst)
+
+
+!malloc_count(?mc1)
 sort(lst, ?lst_sorted)
-!println(lst_sorted)
+!malloc_count(?mc2)
+!print("malloc count for sorting: ")
+!println(mc2-mc1)
 
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
-# sort(lst, ?lst_sorted)
-# !println(lst_sorted)
+!println(length(lst))
+!println("----------------------")
+!println(length(lst_sorted))
 
-!println(lst)
+

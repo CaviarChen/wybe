@@ -38,10 +38,10 @@ def benchmark_program(cmd:str) -> Tuple[List[float], float, str]:
     return (time_used_list, avg_time, first_output)
     
 
-TARGET = "nbody"
-CMD = "./nbody < input.txt"
+TARGET = "int_list_test"
+CMD = "./int_list_test < input.in"
 
-for no_multi_specz in [False, True]:
+for no_multi_specz in [True, False]:
     wybe_build_target(TARGET, no_multi_specz)
     print("="*40)
     if no_multi_specz:
