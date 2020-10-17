@@ -129,6 +129,13 @@ pub def count(lst:int_list, x:int):int =
     else
         0
 
+# Return the length of the list.
+pub def length(lst:int_list):int =
+    if lst = [?h | ?t]
+    then
+        length(t) + 1
+    else
+        0
 
 # Return zero-based index in the list of the first item whose value is equal to x.
 pub def index(lst:int_list, x:int):int = index_helper(lst, 0, x)
