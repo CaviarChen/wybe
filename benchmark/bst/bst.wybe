@@ -1,0 +1,52 @@
+pub type tree { pub empty | node(left:tree, key:int, right:tree) }
+
+
+pub def printTree(t:tree) use !io {
+    ?prefix = "{"
+    !printTree1(t, !prefix)
+    !print("}")
+}
+
+def printTree1(t:tree, !prefix:string) use !io {
+    if { t = node(?l, ?k, ?r) ::
+           !printTree1(l, !prefix)
+           !print(prefix)
+           ?prefix = ", "
+           !print(k)
+           !printTree1(r, !prefix)
+    }
+}
+
+pub def lookup(key:int, tree:tree, ?result:bool) {
+    if {tree = node(?left, ?nodekey, ?right)::
+        if{ key = nodekey:: ?result = true
+        |   key < nodekey:: lookup(key, left , ?result)
+# This should work, if we handled exhaustive tests:
+#       |   key > nodekey:: lookup(key, right, ?result)
+# For now, just do this:
+        |   otherwise    :: lookup(key, right, ?result)
+        }
+    |   otherwise:: ?result = false
+    }
+}
+
+pub def add(key:int, !tree:tree) {
+    if {tree = node(?left, ?nodekey, ?right) ::
+        if { key = nodekey ::
+        | key < nodekey ::
+            add(key, !left)
+        | otherwise ::
+            add(key, !right)
+        }
+        ?tree = node(left, nodekey, right)
+    | otherwise::
+        ?tree = node(empty, key, empty)
+    }
+}
+
+?t = empty
+add(5, !t)
+add(1, !t)
+add(10, !t)
+add(0, !t)
+!printTree(t)

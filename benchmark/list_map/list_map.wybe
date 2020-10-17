@@ -1,0 +1,27 @@
+
+pub type int_list { pub [] | [|](head:int, tail:int_list) }
+
+
+pub def list_map_add(lst:int_list, v:int): int_list =
+    if lst = [?h | ?t] then [(h+v) | list_map_add(t, v)] else lst
+
+
+pub def print(x:int_list) use !io {
+    if { x = [ ?h | ?t] :: 
+        !print(h)
+        foreign c putchar(' ', !io)
+        !print(t)
+    }
+}
+
+
+pub def println(x:int_list) use !io {
+    !print(x)
+    !nl
+}
+
+?l = [1,2,3,4,5,6]
+!println(l)
+?l = list_map_add(l, 1)
+!println(l)
+
