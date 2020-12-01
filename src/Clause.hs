@@ -9,18 +9,13 @@
 module Clause (compileProc) where
 
 import           AST
-import           Control.Monad
-import           Control.Monad.Trans               (lift, liftIO)
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.State
 import           Data.List                         as List
 import           Data.Map                          as Map
 import           Data.Maybe                        as Maybe
-import           Data.Set                          as Set
 import           Options                           (LogSelection (Clause))
 import           Snippets
-import           Text.ParserCombinators.Parsec.Pos
-import           Util
 
 
 ----------------------------------------------------------------
@@ -134,14 +129,14 @@ evalClauseComp clcomp =
 
 -- |Compile a ProcDefSrc to a ProcDefPrim, ie, compile a proc
 --  definition in source form to one in clausal form.
-compileProc :: ProcDef -> Compiler ProcDef
-compileProc proc =
+compileProc :: ProcSpec -> ProcDef -> Compiler ProcDef
+compileProc _procSpec proc =
     evalClauseComp $ do
         let ProcDefSrc body = procImpln proc
         let proto = procProto proc
         let procName = procProtoName proto
         let params = procProtoParams proto
-        modify (\st -> st {nextCallSiteID = (procCallSiteCount proc)})
+        modify (\st -> st {nextCallSiteID = procCallSiteCount proc})
         logClause $ "--------------\nCompiling proc " ++ show proto
         mapM_ (nextVar . paramName) $ List.filter (flowsIn . paramFlow) params
         finishStmt

@@ -190,16 +190,16 @@ freshVarName = do
 
 -- |Run a BodyBuilder monad and extract the final proc body, along with the
 -- final temp variable count and the set of variables used in the body.
-buildBody :: Int -> VarSubstitution -> BodyBuilder a
+buildBody :: ProcSpec -> Int -> VarSubstitution -> BodyBuilder a
           -> Compiler (a, Int, Set PrimVarName, ProcBody)
-buildBody tmp oSubst builder = do
+buildBody procSpec tmp oSubst builder = do
     logMsg BodyBuilder "<<<< Beginning to build a proc body"
     (a, st) <- runStateT builder $ initState tmp oSubst
     logMsg BodyBuilder ">>>> Finished building a proc body"
     logMsg BodyBuilder "     Final state:"
     logMsg BodyBuilder $ fst $ showState 8 st
     st' <- fuseBodies st
-    (tmp', used, body) <- currBody (ProcBody [] NoFork) st'
+    (tmp', used, body) <- currBody procSpec (ProcBody [] NoFork) st'
     return (a, tmp', used, body)
 
 
@@ -1022,13 +1022,14 @@ selectedBranch subst Forked{knownVal=known, forkingVar=var} =
 -- parameters.
 ----------------------------------------------------------------
 
-currBody :: ProcBody -> BodyState -> Compiler (Int,Set PrimVarName,ProcBody)
-currBody body st = do
+currBody :: ProcSpec -> ProcBody -> BodyState
+            -> Compiler (Int,Set PrimVarName,ProcBody)
+currBody procSpec body st = do
     logMsg BodyBuilder $ "Now reconstructing body with usedLater = "
       ++ intercalate ", " (show <$> Map.keys (outSubst st))
     st' <- execStateT (rebuildBody st)
-           $ BkwdBuilderState (Map.keysSet $ outSubst st) Nothing Map.empty
-                              0 body
+           $ BkwdBuilderState procSpec (Map.keysSet $ outSubst st) Nothing
+                              Map.empty 0 body
     logMsg BodyBuilder ">>>> Finished rebuilding a proc body"
     logMsg BodyBuilder "     Final state:"
     logMsg BodyBuilder $ showBlock 5 $ bkwdFollowing st'
@@ -1043,6 +1044,9 @@ type BkwdBuilder = StateT BkwdBuilderState Compiler
 -- forwards.  Because construction runs backwards, the state mostly holds
 -- information about the following code.
 data BkwdBuilderState = BkwdBuilderState {
+      bkwdSelfProcSpec :: ProcSpec,      -- ^The ProcSpec of the current proc,
+                                         -- used to find out self recursive
+                                         -- call.
       bkwdUsedLater :: Set PrimVarName,  -- ^Variables used later in computation
       bkwdBranchesUsedLater :: Maybe [Set PrimVarName],
                                          -- ^The usedLater set for each
@@ -1091,7 +1095,8 @@ rebuildBody st@BodyState{currBuild=prims, currSubst=subst, blockDefs=defs,
             let usedLater''' = Set.insert var usedLater''
             let tmp = maximum $ List.map bkwdTmpCount sts
             let followingBranches = List.map bkwdFollowing sts
-            put $ BkwdBuilderState usedLater''' branchesUsedLater
+            procSpec <- gets bkwdSelfProcSpec
+            put $ BkwdBuilderState procSpec usedLater''' branchesUsedLater
                   Map.empty tmp
                   $ ProcBody [] $ PrimFork var ty lastUse followingBranches
     mapM_ (placedApply (bkwdBuildStmt defs)) prims

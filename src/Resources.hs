@@ -11,18 +11,11 @@ module Resources (resourceCheckMod, canonicaliseProcResources,
 
 import           AST
 import           Control.Monad
-import           Control.Monad.Trans
-import           Control.Monad.Trans.State
-import           Data.Graph
-import           Data.List                 as List
 import           Data.Map                  as Map
 import           Data.Maybe
 import           Data.Set                  as Set
 import           Options                   (LogSelection (Resources))
 import           Snippets
-import           Util
-
-import           Debug.Trace
 
 ------------------------- Checking resource decls -------------------------
 
@@ -72,8 +65,8 @@ checkOneResource rspec Nothing = do
 
 -- |Make sure all resource for the specified proc are module qualified,
 --  making them canonical.
-canonicaliseProcResources :: ProcDef -> Compiler ProcDef
-canonicaliseProcResources pd = do
+canonicaliseProcResources :: ProcSpec -> ProcDef -> Compiler ProcDef
+canonicaliseProcResources _ps pd = do
     logResources $ "Canonicalising resources used by proc " ++ procName pd
     let proto = procProto pd
     let pos = procPos pd
@@ -104,9 +97,9 @@ canonicaliseResourceFlow pos spec = do
 --  just blindly transforms resources into variables and parameters,
 --  counting on the later variable use/def analysis to ensure that
 --  resources are defined before they're used or returned.
-transformProcResources :: ProcDef -> Compiler ProcDef
-transformProcResources pd = do
-    logResources $ "--------------------------------------\n"
+transformProcResources :: ProcSpec -> ProcDef -> Compiler ProcDef
+transformProcResources _ps pd = do
+    logResources "--------------------------------------\n"
     logResources $ "Adding resources to:" ++ showProcDef 4 pd
     let proto = procProto pd
     let pos = procPos pd

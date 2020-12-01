@@ -31,17 +31,17 @@ import           Util
 ----------------------------------------------------------------
 --
 -- Transform mutate instructions with correct destructive flag
--- This is the extra pass after found the alais analysis fixed point
+-- This is the extra pass after found the alias analysis fixed point
 --
 ----------------------------------------------------------------
-transformProc :: ProcDef -> Compiler ProcDef
-transformProc def
+transformProc :: ProcSpec -> ProcDef -> Compiler ProcDef
+transformProc spec def
     | not (procInline def) = do
-        let (ProcDefPrim proto body analysis speczBodies) = procImpln def
-        body' <- transformProcBody def generalVersion
+        let (ProcDefPrim proto _ analysis speczBodies) = procImpln def
+        body' <- transformProcBody spec def
         return def {procImpln = ProcDefPrim proto body' analysis speczBodies}
 
-transformProc def = return def
+transformProc _spec def = return def
 
 
 -- init aliasMap based on the given "nonAliasedParams",
@@ -59,7 +59,7 @@ initAliasMap proto speczVersion = do
     logTransform $ "nonAliasedParams: " ++ show nonAliasedParams
     return $ 
         List.foldl (\aliasMap param -> 
-            if List.notElem param nonAliasedParams
+            if param `List.notElem` nonAliasedParams
                 then unionTwoInDS (LiveVar param) (AliasByParam param) aliasMap
                 else aliasMap
             ) emptyDS inputParams 
@@ -67,11 +67,12 @@ initAliasMap proto speczVersion = do
 
 -- transform a proc based on a given specialized version, and return the body
 -- of that specialization.
-transformProcBody :: ProcDef -> SpeczVersion -> Compiler ProcBody
-transformProcBody procDef speczVersion = do
+transformProcBody :: ProcSpec -> ProcDef -> Compiler ProcBody
+transformProcBody procSpec procDef = do
     when (procInline procDef) $ shouldnt "transforming an inline proc"
 
-    let (ProcDefPrim proto body analysis speczBodies) = procImpln procDef
+    let speczVersion = procSpeczVersion procSpec
+    let (ProcDefPrim proto body analysis _) = procImpln procDef
     logTransform $ replicate 60 '~'
     logTransform $ show proto
     logTransform $ "[" ++ show (speczVersionToId speczVersion) ++ "] :"
@@ -88,7 +89,7 @@ transformProcBody procDef speczVersion = do
                     |> List.map primParamName |> List.map (\x -> (x,x))
                     |> Map.fromList
     let tmp = procTmpCount procDef
-    (_, tmp', _, body') <- buildBody tmp outVarSubs $
+    (_, tmp', _, body') <- buildBody procSpec tmp outVarSubs $
                 transformBody proto body (aliasMap, Map.empty) callSiteMap
     unless (tmp==tmp') $ shouldnt "tmp count changed in transform"
     return body'
@@ -98,12 +99,12 @@ transformBody :: PrimProto -> ProcBody -> (AliasMapLocal, DeadCells)
         -> Map CallSiteID ProcSpec -> BodyBuilder ()
 transformBody caller body (aliasMap, deadCells) callSiteMap = do
     -- (1) Analysis of current caller's prims
-    (aliaseMap', deadCells') <- 
+    (aliasMap', deadCells') <- 
             transformPrims caller body (aliasMap, deadCells) callSiteMap
 
     -- (2) Analysis of caller's bodyFork
     -- Update body while checking alias incurred by bodyfork
-    transformForks caller body (aliaseMap', deadCells') callSiteMap
+    transformForks caller body (aliasMap', deadCells') callSiteMap
 
 
 -- Check alias created by prims of caller proc
@@ -379,8 +380,8 @@ updateRequiredMultiSpeczInMod mod versions = do
 
 -- For the given "ProcDef", generates all specz versions that are required but
 -- haven't got generated.
-generateSpeczVersionInProc :: ProcDef -> Compiler ProcDef
-generateSpeczVersionInProc def
+generateSpeczVersionInProc :: ProcSpec -> ProcDef -> Compiler ProcDef
+generateSpeczVersionInProc spec def
     | not (procInline def) = do
         let procImp = procImpln def
         let ProcDefPrim proto body analysis speczBodies = procImp
@@ -397,7 +398,8 @@ generateSpeczVersionInProc def
                     Just b -> return (ver, Just b)
                     Nothing -> do
                         -- generate the specz version
-                        sbody' <- transformProcBody def ver
+                        let spec' = spec{procSpeczVersion=ver}
+                        sbody' <- transformProcBody spec' def
                         return (ver, Just sbody')
                         ) (Map.toAscList speczBodies)
             let speczBodies' = Map.fromDistinctAscList speczBodiesList
@@ -406,7 +408,7 @@ generateSpeczVersionInProc def
         else
             return def
 
-generateSpeczVersionInProc def = return def
+generateSpeczVersionInProc _spec def = return def
 
 
 -- Similar to "List.groupBy"
