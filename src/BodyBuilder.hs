@@ -1059,12 +1059,11 @@ data BkwdBuilderState = BkwdBuilderState {
 
 
 rebuildBody :: BodyState -> BkwdBuilder ()
-rebuildBody st@BodyState{parent=Just par} =
+rebuildBody BodyState{parent=Just par} =
     shouldnt $ "Body parent left by fusion: " ++ fst (showState 4 par)
 rebuildBody st@BodyState{currBuild=prims, currSubst=subst, blockDefs=defs,
                          buildState=bldst, parent=Nothing} = do
     usedLater <- gets bkwdUsedLater
-    following <- gets bkwdFollowing
     logBkwd $ "Rebuilding body:" ++ fst (showState 8 st)
               ++ "\nwith currSubst = " ++ simpleShowMap subst
               ++ "\n     usedLater = " ++ simpleShowSet usedLater
@@ -1143,13 +1142,14 @@ bkwdBuildStmt defs prim pos = do
             modify (\s -> s { bkwdRenaming = Map.insert fromVar toVar
                                             $ bkwdRenaming s })
       _ -> do
-        let (ins, outs) = splitArgsByMode $ List.filter argIsVar args'
+        let (_, outs) = splitArgsByMode $ List.filter argIsVar args'
         -- Filter out pure instructions that produce no needed outputs
         purity <- lift $ primImpurity prim
         when ( purity > Pure 
              || any (`Set.member` usedLater) (argVarName <$> outs)) $ do
           -- XXX Careful:  probably shouldn't mark last use of variable passed
           -- as input argument more than once in the call
+          let (ins, _) = splitArgsByMode $ List.filter argIsVar args'
           let prim' = replacePrimArgs prim $ markIfLastUse usedLater <$> args'
           logBkwd $ "    updated prim = " ++ show prim'
           let inVars = argVarName <$> ins
