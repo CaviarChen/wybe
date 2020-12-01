@@ -165,8 +165,7 @@ module Builder (buildTargets) where
 import           Analysis
 import           AST
 import           ASTShow                   (logDump)
-import           Blocks                    (blockTransformModule,
-                                            concatLLVMASTModules)
+import           Blocks                    (blockTransformModule)
 import           Callers                   (collectCallers)
 import           Clause                    (compileProc)
 import           Config
@@ -174,7 +173,6 @@ import           Control.Monad
 import           Control.Monad.Extra
 import           Control.Monad.Trans
 import           Control.Monad.Trans.State
-import qualified Data.ByteString.Char8     as BS
 import           Data.Graph                as Graph
 import           Data.List                 as List
 import           Data.Map                  as Map
@@ -186,8 +184,8 @@ import           Normalise                 (normalise, completeNormalisation)
 import           ObjectInterface
 
 import           Optimise                  (optimiseMod)
-import           Options                   (LogSelection (..), Options,
-                                            optForce, optForceAll, optLibDirs,
+import           Options                   (LogSelection (..), optForce,
+                                            optForceAll, optLibDirs,
                                             optNoMultiSpecz)
 import           NewParser                 (parseWybe)
 import           Resources                 (resourceCheckMod,
@@ -207,8 +205,6 @@ import           Unbranch                  (unbranchProc)
 import           Util                      (sccElts)
 import           Snippets
 import           BinaryFactory
-import qualified Data.ByteString.Char8 as BS
-import qualified LLVM.AST              as LLVMAST
 
 ------------------------ Handling dependencies ------------------------
 
