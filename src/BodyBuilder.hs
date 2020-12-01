@@ -22,9 +22,9 @@ import Data.Maybe
 import Data.Tuple.HT (mapFst)
 import Data.Bits
 import Control.Monad
-import Control.Monad.Extra (whenJust)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.State
+import Flow ((|>))
 
 
 ----------------------------------------------------------------
@@ -190,16 +190,16 @@ freshVarName = do
 
 -- |Run a BodyBuilder monad and extract the final proc body, along with the
 -- final temp variable count and the set of variables used in the body.
-buildBody :: ProcSpec -> Int -> VarSubstitution -> BodyBuilder a
+buildBody :: ProcSpec -> PrimProto -> Int -> VarSubstitution -> BodyBuilder a
           -> Compiler (a, Int, Set PrimVarName, ProcBody)
-buildBody procSpec tmp oSubst builder = do
+buildBody procSpec proto tmp oSubst builder = do
     logMsg BodyBuilder "<<<< Beginning to build a proc body"
     (a, st) <- runStateT builder $ initState tmp oSubst
     logMsg BodyBuilder ">>>> Finished building a proc body"
     logMsg BodyBuilder "     Final state:"
     logMsg BodyBuilder $ fst $ showState 8 st
     st' <- fuseBodies st
-    (tmp', used, body) <- currBody procSpec (ProcBody [] NoFork) st'
+    (tmp', used, body) <- currBody procSpec proto (ProcBody [] NoFork) st'
     return (a, tmp', used, body)
 
 
@@ -1022,13 +1022,13 @@ selectedBranch subst Forked{knownVal=known, forkingVar=var} =
 -- parameters.
 ----------------------------------------------------------------
 
-currBody :: ProcSpec -> ProcBody -> BodyState
+currBody :: ProcSpec -> PrimProto -> ProcBody -> BodyState
             -> Compiler (Int,Set PrimVarName,ProcBody)
-currBody procSpec body st = do
+currBody procSpec proto body st = do
     logMsg BodyBuilder $ "Now reconstructing body with usedLater = "
       ++ intercalate ", " (show <$> Map.keys (outSubst st))
     st' <- execStateT (rebuildBody st)
-           $ BkwdBuilderState procSpec (Map.keysSet $ outSubst st) Nothing
+           $ BkwdBuilderState procSpec proto (Map.keysSet $ outSubst st) Nothing
                               Map.empty 0 body
     logMsg BodyBuilder ">>>> Finished rebuilding a proc body"
     logMsg BodyBuilder "     Final state:"
@@ -1047,6 +1047,7 @@ data BkwdBuilderState = BkwdBuilderState {
       bkwdSelfProcSpec :: ProcSpec,      -- ^The ProcSpec of the current proc,
                                          -- used to find out self recursive
                                          -- call.
+      bkwdSelfProto :: PrimProto,        -- ^The PrimProto of the current proc.
       bkwdUsedLater :: Set PrimVarName,  -- ^Variables used later in computation
       bkwdBranchesUsedLater :: Maybe [Set PrimVarName],
                                          -- ^The usedLater set for each
@@ -1095,7 +1096,8 @@ rebuildBody st@BodyState{currBuild=prims, currSubst=subst, blockDefs=defs,
             let tmp = maximum $ List.map bkwdTmpCount sts
             let followingBranches = List.map bkwdFollowing sts
             procSpec <- gets bkwdSelfProcSpec
-            put $ BkwdBuilderState procSpec usedLater''' branchesUsedLater
+            proto <- gets bkwdSelfProto
+            put $ BkwdBuilderState procSpec proto usedLater''' branchesUsedLater
                   Map.empty tmp
                   $ ProcBody [] $ PrimFork var ty lastUse followingBranches
     mapM_ (placedApply (bkwdBuildStmt defs)) prims
@@ -1149,10 +1151,26 @@ bkwdBuildStmt defs prim pos = do
              || any (`Set.member` usedLater) (argVarName <$> outs)) $ do
           -- XXX Careful:  probably shouldn't mark last use of variable passed
           -- as input argument more than once in the call
-          let (ins, _) = splitArgsByMode $ List.filter argIsVar args'
+          selfProcSpec <- gets bkwdSelfProcSpec
+          proto <- gets bkwdSelfProto
+          -- a param that used as a arg for the same param in self recursive
+          -- call is not marked as used.
+          let usedArg = case prim of 
+                (PrimCall _ procSpec _) | selfProcSpec == procSpec ->
+                    -- self recursive call
+                    let params = primProtoParams proto in
+                    List.zip args' params
+                    |> List.filter (\(arg, param) ->
+                      not (primParamFlow param == FlowIn
+                            && argIsVar arg
+                            && primParamName param == argVarName arg)) 
+                    |> List.map fst
+                _ -> args'
+          let (ins, _) = splitArgsByMode $ List.filter argIsVar usedArg
           let prim' = replacePrimArgs prim $ markIfLastUse usedLater <$> args'
           logBkwd $ "    updated prim = " ++ show prim'
           let inVars = argVarName <$> ins
+          -- XXX add a new state for usedLater
           let usedLater' = List.foldr Set.insert usedLater inVars
           st@BkwdBuilderState{bkwdFollowing=bd@ProcBody{bodyPrims=prims}} <- get
           put $ st { bkwdFollowing =

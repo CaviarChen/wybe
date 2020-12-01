@@ -35,8 +35,8 @@ procExpansion pspec def = do
     let tmp = procTmpCount def
     let (ins,outs) = inputOutputParams proto
     let st = initExpanderState $ procCallSiteCount def
-    (st', tmp', used, body') <- buildBody pspec tmp (Map.fromSet id outs) $
-                        execStateT (expandBody body) st
+    (st', tmp', used, body') <- buildBody pspec proto tmp (Map.fromSet id outs)
+                        $ execStateT (expandBody body) st
     let proto' = proto {primProtoParams = markParamNeededness used ins
                                           <$> primProtoParams proto}
     let def' = def { procImpln = ProcDefPrim proto' body' analysis speczBodies,

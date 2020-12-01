@@ -89,7 +89,7 @@ transformProcBody procSpec procDef = do
                     |> List.map primParamName |> List.map (\x -> (x,x))
                     |> Map.fromList
     let tmp = procTmpCount procDef
-    (_, tmp', _, body') <- buildBody procSpec tmp outVarSubs $
+    (_, tmp', _, body') <- buildBody procSpec proto tmp outVarSubs $
                 transformBody proto body (aliasMap, Map.empty) callSiteMap
     unless (tmp==tmp') $ shouldnt "tmp count changed in transform"
     return body'
